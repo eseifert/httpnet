@@ -9,19 +9,19 @@ So far, ``v1`` of the API (the only existing version) is supported.
 Disclaimer
 ==========
 
-This package is not related to http.net GmbH. So far, it is just a proof of
-concept and not tested in any way.
+This package is not related to http.net Internet GmbH. So far, it is just a
+proof of concept and not tested in any way.
 
-..
-    Installation
-    ============
 
-    Use the package manager `pip <https://pip.pypa.io/en/stable/>`__ to install
-    ``httpnet``:
+Installation
+============
 
-    .. code::
+Use the package manager `pip <https://pip.pypa.io/en/stable/>`__ to install
+``httpnet``:
 
-        pip install httpnet
+.. code::
+
+    pip install git+https://github.com/eseifert/httpnet.git
 
 
 Usage
