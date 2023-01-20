@@ -72,13 +72,13 @@ class ElementMeta(type):
 def _from_json_value(value, type_):
     if type_ is type(None) and value is None:
         return None
-    if repr(type_).startswith('typing.Union['):
+    if repr(type_).startswith('typing.Union[') or repr(type_).startswith('typing.Optional['):
         for t in reversed(type_.__args__):
             try:
                 return _from_json_value(value, t)
             except (AttributeError, TypeError):
                 continue
-    if isinstance(type_, (type(Iterable), type(Sequence))):
+    if repr(type_).startswith('typing.Iterable[') or repr(type_).startswith('typing.Sequence['):
         return [_from_json_value(v, type_.__args__[0]) for v in value]
     if type_ is datetime and isinstance(value, str):
         return dateutil.parser.parse(value)
