@@ -55,6 +55,7 @@ class ZoneConfig(Element):
     add_date: Optional[datetime]
     dns_sec_mode: Optional[str]
     dns_server_group_id: Optional[str]
+    restorable_until: Optional[datetime]
 
 
 class RecordType(Enum):
@@ -94,6 +95,7 @@ class DnsRecord(Element):
     zone_config_id: Optional[str]
     account_id: Optional[str]
     add_date: Optional[datetime]
+    comments: Optional[str]
 
 
 class Zone(Element):
