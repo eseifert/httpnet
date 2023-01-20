@@ -35,14 +35,6 @@ First, we need a client instance:
     >>> AUTH_TOKEN = '<your auth token>'
     >>> api = HttpNetClient(auth_token=AUTH_TOKEN)
 
-The client provides access to all service categories in the API. They are iterable:
-
-.. code::
-
-    >>> len(api.domains)
-    123
-    >>> len(api.dns_zones)
-    123
 
 Almost all services provide a common query interface:
 
@@ -50,7 +42,7 @@ Almost all services provide a common query interface:
 
     >>> from httpnet.domain import ContactType
     >>> persons = api.domain_contacts.find(ContactType=str(ContactType.PERSON))
-    >>> len(persons)
+    >>> len(list(persons))
     42
 
 
