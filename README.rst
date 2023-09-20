@@ -31,9 +31,9 @@ First, we need a client instance:
 
 .. code::
 
-    >>> from httpnet.client import HttpNetClient
+    >>> from httpnet.client import HttpNetClient, PlatformBaseUrl
     >>> AUTH_TOKEN = '<your auth token>'
-    >>> api = HttpNetClient(auth_token=AUTH_TOKEN)
+    >>> api = HttpNetClient(auth_token=AUTH_TOKEN, base_url=PlatformBaseUrl.HTTP_NET)
 
 The client provides access to all service categories in the API. They are iterable:
 

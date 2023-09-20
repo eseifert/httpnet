@@ -13,16 +13,25 @@ import requests
 JsonObject = MutableMapping
 
 
+class PlatformBaseUrl(Enum):
+    HTTP_NET = 'https://partner.http.net/api'
+    HOSTING_DE = 'https://secure.hosting.de/api'
+
+    def __str__(self):
+        return self.value
+
+
 class Client:
     USER_AGENT = 'HTTP.NET Partner API Python client 1.0'
-    BASE_URL = 'https://partner.http.net/api'
+    BASE_URL = None
     VERSION = 'v1'
     FORMAT = 'json'
     DEFAULT_TIMEOUT = 180
 
-    def __init__(self, auth_token: str, owner_account_id: Optional[str] = None,
+    def __init__(self, auth_token: str, base_url: PlatformBaseUrl, owner_account_id: Optional[str] = None,
                  timeout: Optional[Union[float, Tuple[float, float]]] = None) -> None:
         self.auth_token = auth_token
+        Client.BASE_URL = base_url
         self.owner_account_id = owner_account_id
         self.timeout = timeout if timeout and timeout > 0 else Client.DEFAULT_TIMEOUT
         self.__session = requests.Session()
