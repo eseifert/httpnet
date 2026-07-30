@@ -2,7 +2,7 @@ from collections.abc import Iterable
 from datetime import datetime
 from enum import Enum
 
-from httpnet._core import Element, Service
+from httpnet._core import CrudService, Element, Service
 
 
 class SoaValues(Element):
@@ -103,32 +103,18 @@ class Zone(Element):
 
 
 class ZoneConfigService(Service[ZoneConfig]):
-    def get(self, key: str) -> ZoneConfig:
+    """Zone configs are created, updated and deleted through :class:`ZoneService`."""
+
+    def get(self, key: str, /) -> ZoneConfig:
         return next(self.find(ZoneConfigId=key))
-
-    def create(self, element: ZoneConfig) -> None:
-        raise NotImplementedError()
-
-    def update(self, key: str, item: ZoneConfig) -> None:
-        raise NotImplementedError()
-
-    def delete(self, key: str) -> None:
-        raise NotImplementedError()
 
 
 class RecordService(Service[DnsRecord]):
+    """Records are created, updated and deleted through :class:`ZoneService`."""
+
     @property
     def _element_name(self) -> str:
         return 'record'
-
-    def create(self, element: ZoneConfig) -> None:
-        raise NotImplementedError()
-
-    def update(self, key: str, item: ZoneConfig) -> None:
-        raise NotImplementedError()
-
-    def delete(self, key: str) -> None:
-        raise NotImplementedError()
 
 
 class ZoneService(Service[Zone]):
@@ -226,7 +212,7 @@ class NameserverSet(Element):
     nameservers: Iterable[str]
 
 
-class NameserverSetService(Service[NameserverSet]):
+class NameserverSetService(CrudService[NameserverSet]):
     def get_default(self) -> NameserverSet:
         response = self._call(
             method='nameserverSetGetDefault',
@@ -264,8 +250,8 @@ class TemplateService(Service[Template]):
         response = self._call(
             method='templateCreate',
             parameters={
-                'dnsTemplate': template,
-                'recordTemplates': list(record_templates)
+                'dnsTemplate': template.to_json(),
+                'recordTemplates': [r.to_json() for r in record_templates]
             }
         )
         return Template.from_json(response.get('response', {}))
@@ -273,11 +259,11 @@ class TemplateService(Service[Template]):
     def recreate(self, template: Template, record_templates: Iterable[RecordTemplate],
                  replacements: TemplateReplacements | None = None) -> Template:
         parameters = {
-            'dnsTemplate': template,
-            'recordTemplates': list(record_templates)
+            'dnsTemplate': template.to_json(),
+            'recordTemplates': [r.to_json() for r in record_templates]
         }
         if replacements:
-            parameters['replacements'] = replacements
+            parameters['replacements'] = replacements.to_json()
         response = self._call(
             method='templateRecreate',
             parameters=parameters
@@ -287,19 +273,19 @@ class TemplateService(Service[Template]):
     def update(self, template: Template,
                record_templates_to_add: Iterable[RecordTemplate],
                record_templates_to_delete: Iterable[RecordTemplate],
-               replacements: TemplateReplacements | None = None) -> Zone:
+               replacements: TemplateReplacements | None = None) -> Template:
         parameters = {
             'dnsTemplate': template.to_json(),
             'recordTemplatesToAdd': [r.to_json() for r in record_templates_to_add],
             'recordTemplatesToDelete': [r.to_json() for r in record_templates_to_delete],
         }
         if replacements:
-            parameters['replacements'] = replacements
+            parameters['replacements'] = replacements.to_json()
         response = self._call(
             method='templateUpdate',
             parameters=parameters
         )
-        return Zone.from_json(response.get('response', {}))
+        return Template.from_json(response.get('response', {}))
 
     def delete(self, template_id: str | None = None, template_name: str | None = None) -> None:
         parameters = {}

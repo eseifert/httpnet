@@ -1,15 +1,21 @@
+import inspect
 import json
 import re
+import sys
 from collections import ChainMap
-from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
+from collections.abc import Iterator, Mapping, MutableMapping
 from datetime import datetime
 from enum import Enum
-from typing import Generic, TypeVar
+from types import UnionType
+from typing import Any, ClassVar, Generic, TypeAlias, TypeVar, Union, get_args, get_origin
 
 import dateutil.parser
 import requests
 
-JsonObject = MutableMapping
+if sys.version_info >= (3, 14):
+    import annotationlib
+
+JsonObject: TypeAlias = MutableMapping[str, Any]
 
 
 class Client:
@@ -23,11 +29,17 @@ class Client:
                  timeout: float | tuple[float, float] | None = None) -> None:
         self.auth_token = auth_token
         self.owner_account_id = owner_account_id
-        self.timeout = timeout if timeout and timeout > 0 else Client.DEFAULT_TIMEOUT
+        self.timeout: float | tuple[float, float] = Client.DEFAULT_TIMEOUT
+        if isinstance(timeout, tuple):
+            if all(t > 0 for t in timeout):
+                self.timeout = timeout
+        elif timeout is not None and timeout > 0:
+            self.timeout = timeout
         self.__session = requests.Session()
         self.__session.headers.update({'User-Agent': Client.USER_AGENT})
 
-    def call(self, service: str, method: str, parameters: Mapping | None = None) -> JsonObject:
+    def call(self, service: str, method: str,
+             parameters: Mapping[str, Any] | None = None) -> JsonObject:
         """
         Calls the method of a service.
 
@@ -37,13 +49,13 @@ class Client:
         :return: JSON data structure of the response
         """
         url = f'{Client.BASE_URL}/{service}/{Client.VERSION}/{Client.FORMAT}/{method}'
-        request = ChainMap({
+        request: ChainMap[str, Any] = ChainMap({
             'authToken': self.auth_token,
         })
         if self.owner_account_id:
             request['ownerAccountId'] = self.owner_account_id
         if parameters is not None:
-            request.maps.append(parameters)
+            request.maps.append(dict(parameters))
         response = self.__session.post(url, data=json.dumps(dict(request)), timeout=self.timeout)
         response.raise_for_status()
         return response.json()
@@ -59,44 +71,83 @@ def snake_case(camel_str: str) -> str:
     return re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
+def _declared_field_names(ns: Mapping[str, Any]) -> list[str]:
+    """
+    Extracts the names of all annotated fields from a class namespace while the
+    class is being created. Since Python 3.14 (:pep:`649`) annotations are
+    evaluated lazily and are no longer present in the namespace, so the
+    annotation function has to be called instead. The string format is used
+    because only the names are of interest and it also copes with annotations
+    that reference names which do not exist yet.
+    """
+    annotations = ns.get('__annotations__')
+    if annotations is None and sys.version_info >= (3, 14):
+        annotate = ns.get('__annotate_func__')
+        if annotate is not None:
+            annotations = annotationlib.call_annotate_function(
+                annotate, annotationlib.Format.STRING)
+    return list(annotations or {})
+
+
+def _field_types(cls: type) -> Mapping[str, Any]:
+    """
+    Returns the resolved types of all fields annotated in the body of ``cls``.
+    Annotations inherited from base classes are not included.
+    """
+    return inspect.get_annotations(cls)
+
+
 class ElementMeta(type):
     def __new__(mcs, typename: str, bases, ns):
         if ns.get('_root', False):
             return super().__new__(mcs, typename, bases, ns)
-        fields = list(ns.get('__annotations__', {}).keys())
+        fields = _declared_field_names(ns)
         ns['__slots__'] = fields
+        # Mirror of ``__slots__`` that is visible to static type checkers.
+        ns['_fields'] = tuple(fields)
         return super().__new__(mcs, typename, bases, ns)
 
 
 def _from_json_value(value, type_):
-    if type_ is type(None) and value is None:
+    if value is None:
         return None
-    if repr(type_).startswith('typing.Union['):
-        for t in reversed(type_.__args__):
-            try:
-                return _from_json_value(value, t)
-            except (AttributeError, TypeError):
+    origin = get_origin(type_)
+    if origin in (Union, UnionType):
+        for arg in get_args(type_):
+            if arg is type(None):
                 continue
-    if isinstance(type_, (type(Iterable), type(Sequence))):
-        return [_from_json_value(v, type_.__args__[0]) for v in value]
+            try:
+                return _from_json_value(value, arg)
+            except (AttributeError, TypeError, ValueError):
+                continue
+        return value
+    if origin is not None:
+        args = get_args(type_)
+        return [_from_json_value(v, args[0]) for v in value] if args else list(value)
     if type_ is datetime and isinstance(value, str):
         return dateutil.parser.parse(value)
-    if issubclass(type_, Element):
+    if isinstance(type_, type) and issubclass(type_, Element):
         return type_.from_json(value)
+    if not isinstance(type_, type):
+        return value
     return type_(value)
 
 
 def _to_json_value(value, type_):
-    if value is None or isinstance(value, (str, int)):
+    if value is None or isinstance(value, (str, int, float)):
         return value
     if isinstance(value, datetime):
         return value.isoformat()
     if isinstance(value, Element):
         return value.to_json()
-    if isinstance(value, list):
-        return [_to_json_value(v, type_.__args__[0]) for v in value]
-    if isinstance(value, dict):
-        return {k: _to_json_value(v, type_.__args__[1]) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        args = get_args(type_)
+        item_type = args[0] if args else None
+        return [_to_json_value(v, item_type) for v in value]
+    if isinstance(value, Mapping):
+        args = get_args(type_)
+        value_type = args[1] if len(args) > 1 else None
+        return {k: _to_json_value(v, value_type) for k, v in value.items()}
     if isinstance(value, Enum):
         return str(value)
     raise TypeError(f'Unknown type: {type_}')
@@ -104,20 +155,21 @@ def _to_json_value(value, type_):
 
 class Element(metaclass=ElementMeta):
     _root = True
+    _fields: ClassVar[tuple[str, ...]] = ()
 
     def __init__(self, **kwargs) -> None:
-        for field in self.__slots__:
+        for field in self._fields:
             setattr(self, field, None)
         for field, value in kwargs.items():
             setattr(self, field, value)
 
     def __repr__(self) -> str:
-        params = ', '.join([f'{field}={getattr(self, field)!r}' for field in self.__slots__])
+        params = ', '.join([f'{field}={getattr(self, field)!r}' for field in self._fields])
         return f'{self.__class__.__qualname__}({params})'
 
     def to_json(self) -> JsonObject:
-        fields = {}
-        for field, type_ in self.__annotations__.items():
+        fields: JsonObject = {}
+        for field, type_ in _field_types(type(self)).items():
             value = getattr(self, field, None)
             if value is not None:
                 field_id = camel_case(field)
@@ -126,13 +178,14 @@ class Element(metaclass=ElementMeta):
 
     @classmethod
     def from_json(cls, data: JsonObject):
-        fields = {}
+        fields: JsonObject = {}
+        field_types = _field_types(cls)
         for field_id, value in data.items():
             field = snake_case(field_id)
             try:
-                field_type = cls.__annotations__[field]
+                field_type = field_types[field]
             except KeyError as e:
-                raise KeyError(f'No field "{field}"" defined in API model "{cls.__qualname__}"') from e
+                raise KeyError(f'No field "{field}" defined in API model "{cls.__qualname__}"') from e
             fields[field] = _from_json_value(value, field_type)
         return cls(**fields)
 
@@ -144,12 +197,27 @@ class ServiceException(Exception):
 T = TypeVar('T', bound=Element)
 
 
+def _element_class_of(service_class: type) -> Any:
+    """
+    Determines the element class a service class has been parameterized with,
+    e.g. ``Contact`` for ``class ContactService(Service[Contact])``.
+    """
+    for klass in service_class.__mro__:
+        # Only the class's own bases matter, inherited ones would yield the type
+        # variable of the generic base class instead of a concrete element class.
+        for base in klass.__dict__.get('__orig_bases__', ()):
+            for arg in get_args(base):
+                if isinstance(arg, type) and issubclass(arg, Element):
+                    return arg
+    raise TypeError(f'{service_class.__qualname__} does not specify an element type')
+
+
 class Service(Generic[T]):
     _MAX_PAGES = 1000000
 
     def __init__(self, client: Client) -> None:
         self._client = client
-        self._element_class = self.__orig_bases__[0].__args__[0]
+        self._element_class: type[T] = _element_class_of(type(self))
 
     @property
     def _service_domain(self) -> str:
@@ -188,14 +256,16 @@ class Service(Generic[T]):
         else:
             return f'{self._element_name}sFind'
 
-    def _call(self, method: str, parameters: Mapping | None = None) -> Mapping:
+    def _call(self, method: str, parameters: Mapping[str, Any] | None = None) -> JsonObject:
         response = self._client.call(self._service_domain, method, parameters)
-        if response.get('status').lower() not in {'success', 'pending'}:
-            error_messages = [f'{error["text"]} ({error["code"]}).' for error in response['errors']]
-            raise ServiceException(' '.join(error_messages))
+        status = str(response.get('status', '')).lower()
+        if status not in {'success', 'pending'}:
+            errors = response.get('errors') or []
+            error_messages = [f'{error["text"]} ({error["code"]}).' for error in errors]
+            raise ServiceException(' '.join(error_messages) or f'API returned status "{status}".')
         return response
 
-    def get(self, key: str) -> T:
+    def get(self, key: str, /) -> T:
         response = self._call(
             method=self._get_method_name,
             parameters={self._id_name: key}
@@ -203,27 +273,9 @@ class Service(Generic[T]):
         response_body = response['response']
         return self._element_class.from_json(response_body)
 
-    def create(self, element: T) -> None:
-        self._call(
-            method=self._create_method_name,
-            parameters={self._element_name: element.to_dict()}
-        )
-
-    def update(self, key: str, item: T) -> None:
-        self._call(
-            method=self._update_method_name,
-            parameters={self._element_name: key}
-        )
-
-    def delete(self, key: str) -> None:
-        self._call(
-            method=self._delete_method_name,
-            parameters={self._id_name: key}
-        )
-
     def find(self, limit: int | None = None, page: int | None = None,
              sort: str | None = None, **filters) -> Iterator[T]:
-        parameters = {}
+        parameters: JsonObject = {}
         if limit:
             parameters['limit'] = limit
         if page:
@@ -260,3 +312,29 @@ class Service(Generic[T]):
 
     def __iter__(self) -> Iterator[T]:
         return self.find()
+
+
+class CrudService(Service[T]):
+    """
+    A service whose elements follow the generic create/update/delete scheme of
+    the API. Services that deviate from it derive from :class:`Service` and
+    declare their own methods.
+    """
+
+    def create(self, element: T, /) -> None:
+        self._call(
+            method=self._create_method_name,
+            parameters={self._element_name: element.to_json()}
+        )
+
+    def update(self, element: T, /) -> None:
+        self._call(
+            method=self._update_method_name,
+            parameters={self._element_name: element.to_json()}
+        )
+
+    def delete(self, key: str, /) -> None:
+        self._call(
+            method=self._delete_method_name,
+            parameters={self._id_name: key}
+        )

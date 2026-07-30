@@ -2,7 +2,7 @@ from collections.abc import Iterable
 from datetime import datetime
 from enum import Enum
 
-from httpnet._core import Element, Service
+from httpnet._core import CrudService, Element, Service
 
 
 class SpamFilter(Element):
@@ -156,7 +156,7 @@ class Organization(Element):
     last_change_date: datetime | None
 
 
-class OrganizationService(Service[Organization]):
+class OrganizationService(CrudService[Organization]):
     pass
 
 
@@ -173,5 +173,5 @@ class DomainSettings(Element):
     lastChangeDate: datetime | None
 
 
-class DomainSettingsService(Service[DomainSettings]):
+class DomainSettingsService(CrudService[DomainSettings]):
     pass

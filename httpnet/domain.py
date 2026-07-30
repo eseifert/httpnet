@@ -82,18 +82,15 @@ class Contact(Element):
 
 
 class ContactService(Service[Contact]):
-    def get(self, key: str) -> Contact:
+    def get(self, key: str, /) -> Contact:
         response = self._call(
             method=f'{self._element_name}sFind',
             parameters=dict(filter=dict(field='ContactId', value=key), limit=1)
         )
         response_body = response['response']
         if not response_body['data']:
-            raise KeyError()
+            raise KeyError(key)
         return self._element_class.from_json(response_body['data'][0])
-
-    def delete(self, key: str) -> Contact:
-        raise NotImplementedError()
 
 
 class DomainContactType(Enum):
@@ -346,11 +343,4 @@ class Job(Element):
 
 
 class JobService(Service[Job]):
-    def create(self, element: Job) -> None:
-        raise NotImplementedError()
-
-    def update(self, key: str, item: Job) -> None:
-        raise NotImplementedError()
-
-    def delete(self, key: str) -> None:
-        raise NotImplementedError()
+    """Jobs are created by the API itself and can only be queried."""
