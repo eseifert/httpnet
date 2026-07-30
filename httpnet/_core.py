@@ -113,13 +113,18 @@ def _from_json_value(value, type_):
         return None
     origin = get_origin(type_)
     if origin in (Union, UnionType):
-        for arg in get_args(type_):
+        args = get_args(type_)
+        for arg in args:
             if arg is type(None):
                 continue
             try:
                 return _from_json_value(value, arg)
             except (AttributeError, TypeError, ValueError):
                 continue
+        # The API uses an empty string to denote an unset value, e.g. for the
+        # deletion date of a domain that is not scheduled for deletion.
+        if value == '' and type(None) in args:
+            return None
         return value
     if origin is not None:
         args = get_args(type_)
@@ -314,27 +319,50 @@ class Service(Generic[T]):
         return self.find()
 
 
-class CrudService(Service[T]):
+class CreatableService(Service[T]):
     """
-    A service whose elements follow the generic create/update/delete scheme of
-    the API. Services that deviate from it derive from :class:`Service` and
-    declare their own methods.
+    A service whose ``<element>Create`` method takes a complete element and
+    responds with the created one.
     """
 
-    def create(self, element: T, /) -> None:
-        self._call(
+    def create(self, element: T, /) -> T:
+        response = self._call(
             method=self._create_method_name,
             parameters={self._element_name: element.to_json()}
         )
+        return self._element_class.from_json(response.get('response', {}))
 
-    def update(self, element: T, /) -> None:
-        self._call(
+
+class UpdatableService(Service[T]):
+    """
+    A service whose ``<element>Update`` method takes a complete element and
+    responds with the updated one. The element to be updated is identified by
+    the ID it carries, all of its other fields are set to the given values.
+    """
+
+    def update(self, element: T, /) -> T:
+        response = self._call(
             method=self._update_method_name,
             parameters={self._element_name: element.to_json()}
         )
+        return self._element_class.from_json(response.get('response', {}))
+
+
+class DeletableService(Service[T]):
+    """
+    A service whose ``<element>Delete`` method takes the ID of an element.
+    """
 
     def delete(self, key: str, /) -> None:
         self._call(
             method=self._delete_method_name,
             parameters={self._id_name: key}
         )
+
+
+class CrudService(CreatableService[T], UpdatableService[T], DeletableService[T]):
+    """
+    A service that follows the generic create/update/delete scheme of the API.
+    Services that deviate from it derive from :class:`Service` or from the
+    individual base classes and declare their own methods.
+    """

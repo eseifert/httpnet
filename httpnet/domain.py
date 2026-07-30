@@ -255,7 +255,7 @@ class DomainService(Service[Domain]):
         if exec_date is not None:
             parameters['execDate'] = exec_date.isoformat()
         self._call(
-            method='domainDeletionCancel',
+            method='domainDelete',
             parameters=parameters
         )
 

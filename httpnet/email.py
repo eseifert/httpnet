@@ -2,7 +2,7 @@ from collections.abc import Iterable
 from datetime import datetime
 from enum import Enum
 
-from httpnet._core import CrudService, Element, Service
+from httpnet._core import CrudService, Element, Service, UpdatableService
 
 
 class SpamFilter(Element):
@@ -87,7 +87,7 @@ class MailboxService(Service[Mailbox]):
     _find_method_name = 'mailboxesFind'
 
     def delete(self, mailbox_id: str | None = None, email_address: str | None = None,
-               exec_date: datetime | None = None) -> Mailbox:
+               exec_date: datetime | None = None) -> None:
         parameters = {}
         if mailbox_id:
             parameters['mailboxId'] = mailbox_id
@@ -97,11 +97,10 @@ class MailboxService(Service[Mailbox]):
             raise ValueError('Either mailbox id or email address are required.')
         if exec_date is not None:
             parameters['execDate'] = exec_date.isoformat()
-        response = self._call(
+        self._call(
             method='mailboxDelete',
             parameters=parameters
         )
-        return Mailbox.from_json(response.get('response', {}))
 
     def cancel_deletion(self, mailbox_id: str | None = None, email_address: str | None = None) -> Mailbox:
         parameters = {}
@@ -161,17 +160,17 @@ class OrganizationService(CrudService[Organization]):
 
 
 class DomainSettings(Element):
-    domainName: str
-    domainNameUnicode: str | None
-    storageQuota: int | None
-    storageQuotaAllocated: int | None
-    mailboxQuota: int | None
-    exchangeMailboxQuota: int | None
-    exchangeStorageQuotaAllocated: int | None
-    exchangeStorageQuota: int | None
-    addDate: datetime | None
-    lastChangeDate: datetime | None
+    domain_name: str
+    domain_name_unicode: str | None
+    storage_quota: int | None
+    storage_quota_allocated: int | None
+    mailbox_quota: int | None
+    exchange_mailbox_quota: int | None
+    exchange_storage_quota_allocated: int | None
+    exchange_storage_quota: int | None
+    add_date: datetime | None
+    last_change_date: datetime | None
 
 
-class DomainSettingsService(CrudService[DomainSettings]):
-    pass
+class DomainSettingsService(UpdatableService[DomainSettings]):
+    """Domain settings exist for every domain, they can only be listed and updated."""

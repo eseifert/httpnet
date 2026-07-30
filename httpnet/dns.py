@@ -144,13 +144,15 @@ class ZoneService(Service[Zone]):
         )
         return Zone.from_json(response.get('response', {}))
 
-    def update(self, zone_config: ZoneConfig, records_to_add: Iterable[DnsRecord],
-               records_to_delete: Iterable[DnsRecord]) -> Zone:
+    def update(self, zone_config: ZoneConfig, records_to_add: Iterable[DnsRecord] = (),
+               records_to_delete: Iterable[DnsRecord] = (),
+               records_to_modify: Iterable[DnsRecord] = ()) -> Zone:
         response = self._call(
             method='zoneUpdate',
             parameters={
                 'zoneConfig': zone_config.to_json(),
                 'recordsToAdd': [r.to_json() for r in records_to_add],
+                'recordsToModify': [r.to_json() for r in records_to_modify],
                 'recordsToDelete': [r.to_json() for r in records_to_delete],
             }
         )
