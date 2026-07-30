@@ -6,6 +6,10 @@ This package provides an unofficial Python client for the
 So far, ``v1`` of the API (the only existing version) is supported. The same
 API is also used by `hosting.de <https://www.hosting.de/api/>`__.
 
+The full documentation, consisting of tutorials, how-to guides, a reference and
+background explanations, is built from the ``docs`` directory and can be
+published on Read the Docs.
+
 
 Disclaimer
 ==========
@@ -92,6 +96,12 @@ development environment and run the checks:
     uv run ruff check   # lint
     uv run ruff format  # format
     uv run ty check     # type check
+
+To build the documentation:
+
+.. code::
+
+    uv run sphinx-build --builder html --fail-on-warning docs docs/_build/html
 
 
 License

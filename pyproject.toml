@@ -41,6 +41,11 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.14",
     "ty>=0.0.1a21",
+    {include-group = "docs"},
+]
+docs = [
+    "furo>=2024.8.6",
+    "sphinx>=8.0",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -50,6 +55,7 @@ packages = ["httpnet"]
 include = [
     "/httpnet",
     "/tests",
+    "/docs",
     "/README.rst",
     "/LICENSE.txt",
 ]

@@ -177,6 +177,12 @@ def _to_json_value(value, type_):
 
 
 class Element(metaclass=ElementMeta):
+    """
+    Base class of all objects the API exchanges. Subclasses declare their
+    fields as class annotations, from which the conversion to and from JSON is
+    derived. Fields that are not passed to the constructor are ``None``.
+    """
+
     _root = True
     _fields: ClassVar[tuple[str, ...]] = ()
 
@@ -191,6 +197,13 @@ class Element(metaclass=ElementMeta):
         return f'{self.__class__.__qualname__}({params})'
 
     def to_json(self) -> JsonObject:
+        """
+        Converts this element to the JSON data structure of the API. Field
+        names are converted from ``snake_case`` to ``camelCase``, fields that
+        are ``None`` are omitted.
+
+        :return: JSON data structure of this element
+        """
         fields: JsonObject = {}
         for field, type_ in _field_types(type(self)).items():
             value = getattr(self, field, None)
@@ -201,6 +214,16 @@ class Element(metaclass=ElementMeta):
 
     @classmethod
     def from_json(cls, data: JsonObject):
+        """
+        Creates an element from the JSON data structure of the API. Field names
+        are converted from ``camelCase`` to ``snake_case``, values are
+        converted to the types the fields are annotated with.
+
+        :param data: JSON data structure as returned by the API
+        :return: New element
+        :raises KeyError: if the data contains a field this element does not
+            declare
+        """
         fields: JsonObject = {}
         field_types = _field_types(cls)
         for field_id, value in data.items():
@@ -214,7 +237,10 @@ class Element(metaclass=ElementMeta):
 
 
 class ServiceException(Exception):
-    pass
+    """
+    Raised when the API rejects a request. The message contains every error the
+    API reported, each followed by its error code in parentheses.
+    """
 
 
 T = TypeVar('T', bound=Element)
@@ -289,6 +315,13 @@ class Service(Generic[T]):
         return response
 
     def get(self, key: str, /) -> T:
+        """
+        Retrieves a single element by its ID.
+
+        :param key: ID of the element
+        :return: The element
+        :raises ServiceException: if no element with this ID exists
+        """
         response = self._call(
             method=self._get_method_name,
             parameters={self._id_name: key}
@@ -319,6 +352,19 @@ class Service(Generic[T]):
 
     def find(self, limit: int | None = None, page: int | None = None,
              sort: str | None = None, **filters) -> Iterator[T]:
+        """
+        Retrieves all elements matching the given filters. The results are
+        fetched page by page while the returned iterator is consumed.
+
+        :param limit: Number of elements per request, the API defaults to 25
+        :param page: Number of the only page to retrieve. By default all pages
+            are retrieved.
+        :param sort: Name of the field to sort by, prefixed with ``~`` for
+            descending order
+        :param filters: Field names and values to filter by, as named by the
+            API. An asterisk in a value matches any number of characters.
+        :return: Iterator over the matching elements
+        """
         parameters = self._find_parameters(limit=limit, sort=sort, filters=filters)
         if page:
             page_range = range(page, page + 1)
@@ -375,6 +421,12 @@ class CreatableService(Service[T]):
     """
 
     def create(self, element: T, /) -> T:
+        """
+        Creates a new element.
+
+        :param element: Complete element to be created. Its ID is ignored.
+        :return: The created element as stored by the API
+        """
         response = self._call(
             method=self._create_method_name,
             parameters={self._element_name: element.to_json()}
@@ -390,6 +442,14 @@ class UpdatableService(Service[T]):
     """
 
     def update(self, element: T, /) -> T:
+        """
+        Updates an existing element. The element is identified by the ID it
+        carries. All of its other fields are set to the given values, fields
+        that are not set are reset to their defaults.
+
+        :param element: Complete element with the new values
+        :return: The updated element as stored by the API
+        """
         response = self._call(
             method=self._update_method_name,
             parameters={self._element_name: element.to_json()}
@@ -403,6 +463,11 @@ class DeletableService(Service[T]):
     """
 
     def delete(self, key: str, /) -> None:
+        """
+        Deletes an element.
+
+        :param key: ID of the element to be deleted
+        """
         self._call(
             method=self._delete_method_name,
             parameters={self._id_name: key}
