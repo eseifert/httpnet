@@ -6,7 +6,7 @@ https://github.com/eseifert/httpnet/issues
 import apidata
 import pytest
 
-from httpnet.client import HttpNetClient
+from httpnet.client import HttpNetClient, Platform
 from httpnet.dns import SoaValues, Zone, ZoneConfig, ZoneConfigType
 
 
@@ -129,3 +129,51 @@ class TestIssue3:
         }})
         assert len(list(api.domains.find())) == 1
         assert len(session.calls) == 1
+
+
+class TestIssue2:
+    """
+    https://github.com/eseifert/httpnet/issues/2
+
+    hosting.de is operated by the same company and offers the same API under a
+    different base URL, which was hard-coded.
+    """
+
+    def test_http_net_is_the_default(self, session) -> None:
+        HttpNetClient(auth_token='token').domains.count()
+        assert session.calls[0]['url'] == \
+            'https://partner.http.net/api/domain/v1/json/domainsFind'
+
+    def test_hosting_de_platform(self, session) -> None:
+        api = HttpNetClient(auth_token='token', base_url=Platform.HOSTING_DE)
+        api.dns_zones.count()
+        assert session.calls[0]['url'] == \
+            'https://secure.hosting.de/api/dns/v1/json/zonesFind'
+
+    def test_plain_url_is_accepted(self, session) -> None:
+        api = HttpNetClient(auth_token='token', base_url='https://api.example.com/api')
+        api.mailboxes.count()
+        assert session.calls[0]['url'] == \
+            'https://api.example.com/api/email/v1/json/mailboxesFind'
+
+    def test_trailing_slash_is_stripped(self, session) -> None:
+        api = HttpNetClient(auth_token='token', base_url='https://api.example.com/api/')
+        api.domains.count()
+        assert session.calls[0]['url'] == \
+            'https://api.example.com/api/domain/v1/json/domainsFind'
+
+    def test_clients_do_not_influence_each_other(self, session) -> None:
+        # The base URL used to be a class attribute, so a second client would
+        # have changed the platform of the first one.
+        http_net = HttpNetClient(auth_token='token')
+        hosting_de = HttpNetClient(auth_token='token', base_url=Platform.HOSTING_DE)
+        hosting_de.domains.count()
+        http_net.domains.count()
+        assert [call['url'] for call in session.calls] == [
+            'https://secure.hosting.de/api/domain/v1/json/domainsFind',
+            'https://partner.http.net/api/domain/v1/json/domainsFind',
+        ]
+
+    def test_platform_str_is_the_base_url(self) -> None:
+        assert str(Platform.HOSTING_DE) == 'https://secure.hosting.de/api'
+        assert str(Platform.HTTP_NET) == 'https://partner.http.net/api'

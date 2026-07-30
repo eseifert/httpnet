@@ -18,16 +18,34 @@ if sys.version_info >= (3, 14):
 JsonObject: TypeAlias = MutableMapping[str, Any]
 
 
+class Platform(Enum):
+    """
+    Known deployments of the API. http.net Internet GmbH also operates the
+    same API for hosting.de, only the base URL differs.
+    """
+
+    HTTP_NET = 'https://partner.http.net/api'
+    HOSTING_DE = 'https://secure.hosting.de/api'
+
+    def __repr__(self):
+        return f'{self.__class__.__qualname__}.{self.name}'
+
+    def __str__(self):
+        return self.value
+
+
 class Client:
     USER_AGENT = 'HTTP.NET Partner API Python client 1.0'
-    BASE_URL = 'https://partner.http.net/api'
+    BASE_URL = str(Platform.HTTP_NET)
     VERSION = 'v1'
     FORMAT = 'json'
     DEFAULT_TIMEOUT = 180
 
     def __init__(self, auth_token: str, owner_account_id: str | None = None,
-                 timeout: float | tuple[float, float] | None = None) -> None:
+                 timeout: float | tuple[float, float] | None = None,
+                 base_url: Platform | str = Platform.HTTP_NET) -> None:
         self.auth_token = auth_token
+        self.base_url = str(base_url).rstrip('/')
         self.owner_account_id = owner_account_id
         self.timeout: float | tuple[float, float] = Client.DEFAULT_TIMEOUT
         if isinstance(timeout, tuple):
@@ -48,7 +66,7 @@ class Client:
         :param parameters: Mapping of input parameters
         :return: JSON data structure of the response
         """
-        url = f'{Client.BASE_URL}/{service}/{Client.VERSION}/{Client.FORMAT}/{method}'
+        url = f'{self.base_url}/{service}/{Client.VERSION}/{Client.FORMAT}/{method}'
         request: ChainMap[str, Any] = ChainMap({
             'authToken': self.auth_token,
         })

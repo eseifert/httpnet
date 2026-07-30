@@ -3,7 +3,8 @@ Description
 
 This package provides an unofficial Python client for the
 `Partner API <https://www.http.net/docs/api/>`__ of http.net Internet GmbH.
-So far, ``v1`` of the API (the only existing version) is supported.
+So far, ``v1`` of the API (the only existing version) is supported. The same
+API is also used by `hosting.de <https://www.hosting.de/api/>`__.
 
 
 Disclaimer
@@ -40,6 +41,15 @@ First, we need a client instance:
     >>> from httpnet.client import HttpNetClient
     >>> AUTH_TOKEN = '<your auth token>'
     >>> api = HttpNetClient(auth_token=AUTH_TOKEN)
+
+http.net Internet GmbH operates the same API for
+`hosting.de <https://www.hosting.de/api/>`__. To use it, pass the respective
+platform:
+
+.. code::
+
+    >>> from httpnet.client import HttpNetClient, Platform
+    >>> api = HttpNetClient(auth_token=AUTH_TOKEN, base_url=Platform.HOSTING_DE)
 
 The client provides access to all service categories in the API. They can be
 counted and are iterable:
