@@ -278,15 +278,11 @@ class Service(Generic[T]):
         response_body = response['response']
         return self._element_class.from_json(response_body)
 
-    def find(self, limit: int | None = None, page: int | None = None,
-             sort: str | None = None, **filters) -> Iterator[T]:
+    def _find_parameters(self, limit: int | None = None, sort: str | None = None,
+                         filters: Mapping[str, Any] | None = None) -> JsonObject:
         parameters: JsonObject = {}
         if limit:
             parameters['limit'] = limit
-        if page:
-            page_range = range(page, page + 1)
-        else:
-            page_range = range(1, Service._MAX_PAGES)
         if sort:
             if sort.startswith('~'):
                 sort_params = dict(field=sort.lstrip('~'), order='desc')
@@ -301,6 +297,15 @@ class Service(Generic[T]):
                     for field, value in filters.items()
                 ]
             )
+        return parameters
+
+    def find(self, limit: int | None = None, page: int | None = None,
+             sort: str | None = None, **filters) -> Iterator[T]:
+        parameters = self._find_parameters(limit=limit, sort=sort, filters=filters)
+        if page:
+            page_range = range(page, page + 1)
+        else:
+            page_range = range(1, Service._MAX_PAGES)
         for page in page_range:
             parameters['page'] = page
             response = self._call(
@@ -314,6 +319,32 @@ class Service(Generic[T]):
             total_pages = response_body.get('totalPages', 0)
             if total_pages == 0 or page == total_pages:
                 break
+
+    def count(self, sort: str | None = None, **filters) -> int:
+        """
+        Returns the number of elements matching the given filters without
+        retrieving them. This is a single request, the API reports the total
+        number of matches for every listing.
+
+        :param sort: Name of the field to sort by, ignored for the result
+        :param filters: Field names and values to filter by
+        :return: Number of matching elements
+        """
+        response = self._call(
+            method=self._find_method_name,
+            parameters={**self._find_parameters(limit=1, sort=sort, filters=filters), 'page': 1}
+        )
+        return response.get('response', {}).get('totalEntries', 0)
+
+    def __len__(self) -> int:
+        """
+        Returns the total number of elements of this service.
+
+        Note that this makes the service a sized iterable, so ``list(service)``
+        asks the API for the number of elements before it starts iterating.
+        Use ``list(service.find())`` to avoid that additional request.
+        """
+        return self.count()
 
     def __iter__(self) -> Iterator[T]:
         return self.find()

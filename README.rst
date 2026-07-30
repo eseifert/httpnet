@@ -41,22 +41,26 @@ First, we need a client instance:
     >>> AUTH_TOKEN = '<your auth token>'
     >>> api = HttpNetClient(auth_token=AUTH_TOKEN)
 
-The client provides access to all service categories in the API. They are iterable:
+The client provides access to all service categories in the API. They can be
+counted and are iterable:
 
 .. code::
 
     >>> len(api.domains)
     123
-    >>> len(api.dns_zones)
-    123
+    >>> for domain in api.dns_zones:
+    ...     print(domain.zone_config.name)
 
-Almost all services provide a common query interface:
+Almost all services provide a common query interface. ``find`` returns an
+iterator, ``count`` returns the number of matches without retrieving them:
 
 .. code::
 
     >>> from httpnet.domain import ContactType
     >>> persons = api.domain_contacts.find(ContactType=str(ContactType.PERSON))
-    >>> len(persons)
+    >>> next(persons).handle
+    'JS15'
+    >>> api.domain_contacts.count(ContactType=str(ContactType.PERSON))
     42
 
 

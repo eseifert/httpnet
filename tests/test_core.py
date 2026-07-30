@@ -110,7 +110,7 @@ class TestService:
             'status': 'success',
             'response': {'data': [{'id': '2', 'name': 'b'}], 'totalPages': 2},
         })
-        widgets = list(WidgetService(client))
+        widgets = list(WidgetService(client).find())
         assert [w.id for w in widgets] == ['1', '2']
         assert [call['body']['page'] for call in session.calls] == [1, 2]
 

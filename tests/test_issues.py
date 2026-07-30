@@ -67,3 +67,65 @@ class TestIssue1:
         # enums all used to end up in issubclass().
         zone_config = ZoneConfig.from_json({'name': 'example.com', field: value})
         assert getattr(zone_config, attribute) is not None
+
+
+class TestIssue3:
+    """
+    https://github.com/eseifert/httpnet/issues/3
+
+    ``len(api.domains)``, as shown in the README, raised "TypeError: object of
+    type 'DomainService' has no len()".
+    """
+
+    def test_len_of_a_service(self, api, session) -> None:
+        session.responses.append({'status': 'success', 'response': {
+            'data': [apidata.DOMAIN], 'limit': 1, 'page': 1,
+            'totalEntries': 123, 'totalPages': 123,
+        }})
+        assert len(api.domains) == 123
+
+    def test_len_asks_for_a_single_element_only(self, api, session) -> None:
+        session.responses.append({'status': 'success', 'response': {'totalEntries': 123}})
+        len(api.dns_zones)
+        body = session.calls[0]['body']
+        assert session.calls[0]['url'].endswith('/zonesFind')
+        assert body['limit'] == 1
+        assert body['page'] == 1
+        assert 'filter' not in body
+
+    def test_count_can_be_filtered(self, api, session) -> None:
+        session.responses.append({'status': 'success', 'response': {'totalEntries': 42}})
+        count = api.domain_contacts.count(ContactType='person')
+        assert count == 42
+        assert session.calls[0]['body']['filter'] == {
+            'subFilterConnective': 'AND',
+            'subFilter': [{'field': 'ContactType', 'value': 'person'}],
+        }
+
+    def test_count_without_results(self, api, session) -> None:
+        session.responses.append({'status': 'success', 'response': {'totalEntries': 0}})
+        assert api.domains.count(Name='nonexistent.example') == 0
+
+    def test_len_requires_one_request_per_call(self, api, session) -> None:
+        session.responses.append({'status': 'success', 'response': {'totalEntries': 7}})
+        session.responses.append({'status': 'success', 'response': {'totalEntries': 7}})
+        assert len(api.domains) == len(api.domains)
+        assert len(session.calls) == 2
+
+    def test_iterating_a_service_still_works(self, api, session) -> None:
+        # A sized iterable makes list() ask for the length first, so the count
+        # request precedes the listing requests.
+        session.responses.append({'status': 'success', 'response': {'totalEntries': 1}})
+        session.responses.append({'status': 'success', 'response': {
+            'data': [apidata.DOMAIN], 'totalEntries': 1, 'totalPages': 1,
+        }})
+        domains = list(api.domains)
+        assert [d.name for d in domains] == ['example.com']
+        assert [call['body'].get('limit') for call in session.calls] == [1, None]
+
+    def test_find_does_not_trigger_a_count(self, api, session) -> None:
+        session.responses.append({'status': 'success', 'response': {
+            'data': [apidata.DOMAIN], 'totalEntries': 1, 'totalPages': 1,
+        }})
+        assert len(list(api.domains.find())) == 1
+        assert len(session.calls) == 1
