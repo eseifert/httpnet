@@ -1,6 +1,7 @@
+from collections.abc import Iterable
 from datetime import datetime
 from enum import Enum
-from typing import Iterable, Optional
+
 from httpnet._core import Element, Service
 
 
@@ -13,17 +14,17 @@ class SoaValues(Element):
 
 
 class TemplateReplacements(Element):
-    ipv4_replacement: Optional[str]
-    ipv6_replacement: Optional[str]
-    mail_ipv4_replacement: Optional[str]
-    mail_ipv6_replacement: Optional[str]
+    ipv4_replacement: str | None
+    ipv6_replacement: str | None
+    mail_ipv4_replacement: str | None
+    mail_ipv6_replacement: str | None
 
 
 class TemplateValues(Element):
-    template_id: Optional[str]
-    template_name: Optional[str]
-    tie_to_template: Optional[bool]
-    template_replacements: Optional[TemplateReplacements]
+    template_id: str | None
+    template_name: str | None
+    tie_to_template: bool | None
+    template_replacements: TemplateReplacements | None
 
 
 class ZoneConfigType(Enum):
@@ -39,22 +40,22 @@ class ZoneConfigType(Enum):
 
 
 class ZoneConfig(Element):
-    id: Optional[str]
-    account_id: Optional[str]
-    status: Optional[str]
-    name: Optional[str]
-    name_unicode: Optional[str]
-    master_ip: Optional[str]
-    type: Optional[ZoneConfigType]
-    email_address: Optional[str]
-    zone_transfer_whitelist: Optional[Iterable[str]]
-    last_change_date: Optional[datetime]
-    soa_values: Optional[SoaValues]
-    template_values: Optional[TemplateValues]
+    id: str | None
+    account_id: str | None
+    status: str | None
+    name: str | None
+    name_unicode: str | None
+    master_ip: str | None
+    type: ZoneConfigType | None
+    email_address: str | None
+    zone_transfer_whitelist: Iterable[str] | None
+    last_change_date: datetime | None
+    soa_values: SoaValues | None
+    template_values: TemplateValues | None
     # undocumented
-    add_date: Optional[datetime]
-    dns_sec_mode: Optional[str]
-    dns_server_group_id: Optional[str]
+    add_date: datetime | None
+    dns_sec_mode: str | None
+    dns_server_group_id: str | None
 
 
 class RecordType(Enum):
@@ -81,23 +82,23 @@ class RecordType(Enum):
 
 
 class DnsRecord(Element):
-    id: Optional[str]
-    zone_id: Optional[str]
-    record_template_id: Optional[str]
-    name: Optional[str]
-    type: Optional[RecordType]
-    content: Optional[str]
-    ttl: Optional[int]
-    priority: Optional[int]
-    last_change_date: Optional[datetime]
+    id: str | None
+    zone_id: str | None
+    record_template_id: str | None
+    name: str | None
+    type: RecordType | None
+    content: str | None
+    ttl: int | None
+    priority: int | None
+    last_change_date: datetime | None
     # undocumented
-    zone_config_id: Optional[str]
-    account_id: Optional[str]
-    add_date: Optional[datetime]
+    zone_config_id: str | None
+    account_id: str | None
+    add_date: datetime | None
 
 
 class Zone(Element):
-    zone_config: Optional[ZoneConfig]
+    zone_config: ZoneConfig | None
     records: Iterable[DnsRecord]
 
 
@@ -131,8 +132,8 @@ class RecordService(Service[DnsRecord]):
 
 
 class ZoneService(Service[Zone]):
-    def create(self, zone: Zone, nameserver_set_id: Optional[str] = None,
-               use_default_nameserver_set: Optional[bool] = None) -> Zone:
+    def create(self, zone: Zone, nameserver_set_id: str | None = None,
+               use_default_nameserver_set: bool | None = None) -> Zone:
         parameters = zone.to_json()
         if nameserver_set_id is not None:
             parameters['nameserverSetId'] = nameserver_set_id
@@ -144,8 +145,8 @@ class ZoneService(Service[Zone]):
         )
         return Zone.from_json(response.get('response', {}))
 
-    def recreate(self, zone: Zone, nameserver_set_id: Optional[str] = None,
-                 use_default_nameserver_set: Optional[bool] = None) -> Zone:
+    def recreate(self, zone: Zone, nameserver_set_id: str | None = None,
+                 use_default_nameserver_set: bool | None = None) -> Zone:
         parameters = zone.to_json()
         if nameserver_set_id is not None:
             parameters['nameserverSetId'] = nameserver_set_id
@@ -188,8 +189,8 @@ class ZoneService(Service[Zone]):
             }
         )
 
-    def untie_from_templates(self, zone_config_ids: Optional[Iterable[str]] = None,
-                             zone_config_names: Optional[Iterable[str]] = None) -> None:
+    def untie_from_templates(self, zone_config_ids: Iterable[str] | None = None,
+                             zone_config_names: Iterable[str] | None = None) -> None:
         parameters = {}
         if zone_config_ids:
             parameters['zoneConfigIds'] = list(zone_config_ids)
@@ -202,8 +203,8 @@ class ZoneService(Service[Zone]):
             parameters=parameters
         )
 
-    def tie_to_templates(self, zone_config_ids: Optional[Iterable[str]] = None,
-                         zone_config_names: Optional[Iterable[str]] = None) -> None:
+    def tie_to_templates(self, zone_config_ids: Iterable[str] | None = None,
+                         zone_config_names: Iterable[str] | None = None) -> None:
         parameters = {}
         if zone_config_ids:
             parameters['zoneConfigIds'] = list(zone_config_ids)
@@ -218,10 +219,10 @@ class ZoneService(Service[Zone]):
 
 
 class NameserverSet(Element):
-    id: Optional[str]
-    account_id: Optional[str]
+    id: str | None
+    account_id: str | None
     name: str
-    default_nameserver_set: Optional[bool]
+    default_nameserver_set: bool | None
     nameservers: Iterable[str]
 
 
@@ -234,13 +235,13 @@ class NameserverSetService(Service[NameserverSet]):
 
 
 class Template(Element):
-    id: Optional[str]
-    account_id: Optional[str]
-    name: Optional[str]
+    id: str | None
+    account_id: str | None
+    name: str | None
     # undocumented
-    email_address: Optional[str]
-    add_date: Optional[datetime]
-    last_change_date: Optional[datetime]
+    email_address: str | None
+    add_date: datetime | None
+    last_change_date: datetime | None
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -249,13 +250,13 @@ class Template(Element):
 
 
 class RecordTemplate(Element):
-    id: Optional[str]
-    template_id: Optional[str]
-    name: Optional[str]
+    id: str | None
+    template_id: str | None
+    name: str | None
     type: RecordType
     content: str
-    ttl: Optional[int]
-    priority: Optional[int]
+    ttl: int | None
+    priority: int | None
 
 
 class TemplateService(Service[Template]):
@@ -270,7 +271,7 @@ class TemplateService(Service[Template]):
         return Template.from_json(response.get('response', {}))
 
     def recreate(self, template: Template, record_templates: Iterable[RecordTemplate],
-                 replacements: Optional[TemplateReplacements] = None) -> Template:
+                 replacements: TemplateReplacements | None = None) -> Template:
         parameters = {
             'dnsTemplate': template,
             'recordTemplates': list(record_templates)
@@ -286,7 +287,7 @@ class TemplateService(Service[Template]):
     def update(self, template: Template,
                record_templates_to_add: Iterable[RecordTemplate],
                record_templates_to_delete: Iterable[RecordTemplate],
-               replacements: Optional[TemplateReplacements] = None) -> Zone:
+               replacements: TemplateReplacements | None = None) -> Zone:
         parameters = {
             'dnsTemplate': template.to_json(),
             'recordTemplatesToAdd': [r.to_json() for r in record_templates_to_add],
@@ -300,7 +301,7 @@ class TemplateService(Service[Template]):
         )
         return Zone.from_json(response.get('response', {}))
 
-    def delete(self, template_id: Optional[str] = None, template_name: Optional[str] = None) -> None:
+    def delete(self, template_id: str | None = None, template_name: str | None = None) -> None:
         parameters = {}
         if template_id:
             parameters['templateId'] = template_id

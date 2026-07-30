@@ -1,18 +1,19 @@
+from collections.abc import Iterable
 from datetime import datetime
 from enum import Enum
-from typing import Iterable, Optional
+
 from httpnet._core import Element, Service
 
 
 class SpamFilter(Element):
-    banned_files_checks: Optional[bool]
-    delete_spam: Optional[bool]
-    header_checks: Optional[bool]
-    malware_checks: Optional[bool]
-    modify_subject_on_spam: Optional[bool]
-    spam_checks: Optional[bool]
-    spam_level: Optional[str]
-    use_greylisting: Optional[bool]
+    banned_files_checks: bool | None
+    delete_spam: bool | None
+    header_checks: bool | None
+    malware_checks: bool | None
+    modify_subject_on_spam: bool | None
+    spam_checks: bool | None
+    spam_level: str | None
+    use_greylisting: bool | None
 
 
 class MailboxType(Enum):
@@ -39,33 +40,33 @@ class ForwarderType(Enum):
 
 
 class Mailbox(Element):
-    id: Optional[str]
-    account_id: Optional[str]
+    id: str | None
+    account_id: str | None
     email_address: str
-    email_address_unicode: Optional[str]
-    domain_name: Optional[str]
-    domain_name_unicode: Optional[str]
-    status: Optional[str]
-    spam_filter: Optional[SpamFilter]
-    type: Optional[MailboxType]
-    product_code: Optional[str]
-    forwarder_targets: Optional[Iterable[str]]  # only IMAP and Forwarder
-    smtp_forwarder_target: Optional[str]  # only IMAP
-    is_admin: Optional[bool]  # only IMAP
-    first_name: Optional[str]  # only Exchange
-    last_name: Optional[str]  # only Exchange
-    exchange_guid: Optional[str]  # only Exchange
-    organization_id: Optional[str]  # only Exchange
-    forwarder_type: Optional[ForwarderType]  # only Forwarder
-    password: Optional[str]
+    email_address_unicode: str | None
+    domain_name: str | None
+    domain_name_unicode: str | None
+    status: str | None
+    spam_filter: SpamFilter | None
+    type: MailboxType | None
+    product_code: str | None
+    forwarder_targets: Iterable[str] | None  # only IMAP and Forwarder
+    smtp_forwarder_target: str | None  # only IMAP
+    is_admin: bool | None  # only IMAP
+    first_name: str | None  # only Exchange
+    last_name: str | None  # only Exchange
+    exchange_guid: str | None  # only Exchange
+    organization_id: str | None  # only Exchange
+    forwarder_type: ForwarderType | None  # only Forwarder
+    password: str | None
     storage_quota: int
-    storage_quota_used: Optional[int]
-    paid_until: Optional[datetime]
-    renew_on: Optional[datetime]
-    deletion_scheduled_for: Optional[datetime]
-    restorable_until: Optional[datetime]
-    add_date: Optional[datetime]
-    last_change_date: Optional[datetime]
+    storage_quota_used: int | None
+    paid_until: datetime | None
+    renew_on: datetime | None
+    deletion_scheduled_for: datetime | None
+    restorable_until: datetime | None
+    add_date: datetime | None
+    last_change_date: datetime | None
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -85,8 +86,8 @@ class Mailbox(Element):
 class MailboxService(Service[Mailbox]):
     _find_method_name = 'mailboxesFind'
 
-    def delete(self, mailbox_id: Optional[str] = None, email_address: Optional[str] = None,
-               exec_date: Optional[datetime] = None) -> Mailbox:
+    def delete(self, mailbox_id: str | None = None, email_address: str | None = None,
+               exec_date: datetime | None = None) -> Mailbox:
         parameters = {}
         if mailbox_id:
             parameters['mailboxId'] = mailbox_id
@@ -102,7 +103,7 @@ class MailboxService(Service[Mailbox]):
         )
         return Mailbox.from_json(response.get('response', {}))
 
-    def cancel_deletion(self, mailbox_id: Optional[str] = None, email_address: Optional[str] = None) -> Mailbox:
+    def cancel_deletion(self, mailbox_id: str | None = None, email_address: str | None = None) -> Mailbox:
         parameters = {}
         if mailbox_id:
             parameters['mailboxId'] = mailbox_id
@@ -116,7 +117,7 @@ class MailboxService(Service[Mailbox]):
         )
         return Mailbox.from_json(response.get('response', {}))
 
-    def restore(self, mailbox_id: Optional[str] = None, email_address: Optional[str] = None) -> Mailbox:
+    def restore(self, mailbox_id: str | None = None, email_address: str | None = None) -> Mailbox:
         parameters = {}
         if mailbox_id:
             parameters['mailboxId'] = mailbox_id
@@ -130,7 +131,7 @@ class MailboxService(Service[Mailbox]):
         )
         return Mailbox.from_json(response.get('response', {}))
 
-    def purge_restorable(self, mailbox_id: Optional[str] = None, email_address: Optional[str] = None) -> None:
+    def purge_restorable(self, mailbox_id: str | None = None, email_address: str | None = None) -> None:
         parameters = {}
         if mailbox_id:
             parameters['mailboxId'] = mailbox_id
@@ -145,14 +146,14 @@ class MailboxService(Service[Mailbox]):
 
 
 class Organization(Element):
-    id: Optional[str]
-    account_id: Optional[str]
-    comment: Optional[str]
+    id: str | None
+    account_id: str | None
+    comment: str | None
     name: str
-    status: Optional[str]
-    member_domains: Optional[Iterable[str]]
-    add_date: Optional[datetime]
-    last_change_date: Optional[datetime]
+    status: str | None
+    member_domains: Iterable[str] | None
+    add_date: datetime | None
+    last_change_date: datetime | None
 
 
 class OrganizationService(Service[Organization]):
@@ -161,15 +162,15 @@ class OrganizationService(Service[Organization]):
 
 class DomainSettings(Element):
     domainName: str
-    domainNameUnicode: Optional[str]
-    storageQuota: Optional[int]
-    storageQuotaAllocated: Optional[int]
-    mailboxQuota: Optional[int]
-    exchangeMailboxQuota: Optional[int]
-    exchangeStorageQuotaAllocated: Optional[int]
-    exchangeStorageQuota: Optional[int]
-    addDate: Optional[datetime]
-    lastChangeDate: Optional[datetime]
+    domainNameUnicode: str | None
+    storageQuota: int | None
+    storageQuotaAllocated: int | None
+    mailboxQuota: int | None
+    exchangeMailboxQuota: int | None
+    exchangeStorageQuotaAllocated: int | None
+    exchangeStorageQuota: int | None
+    addDate: datetime | None
+    lastChangeDate: datetime | None
 
 
 class DomainSettingsService(Service[DomainSettings]):

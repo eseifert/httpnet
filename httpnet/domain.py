@@ -1,6 +1,7 @@
+from collections.abc import Iterable, Sequence
 from datetime import datetime
 from enum import Enum
-from typing import Iterable, Optional, Sequence
+
 from httpnet._core import Element, Service
 
 
@@ -17,60 +18,60 @@ class ContactType(Enum):
 
 
 class Contact(Element):
-    account_id: Optional[str]
-    id: Optional[str]
-    handle: Optional[str]
+    account_id: str | None
+    id: str | None
+    handle: str | None
     type: ContactType
     name: str
-    organization: Optional[str]
+    organization: str | None
     street: Sequence[str]
-    postal_code: Optional[str]
+    postal_code: str | None
     city: str
-    state: Optional[str]
+    state: str | None
     country: str
     email_address: str
     phone_number: str
-    fax_number: Optional[str]
-    sip_uri: Optional[str]
-    hidden: Optional[bool]
-    usable_by_sub_account: Optional[bool]
-    add_date: Optional[datetime]
-    last_change_date: Optional[datetime]
+    fax_number: str | None
+    sip_uri: str | None
+    hidden: bool | None
+    usable_by_sub_account: bool | None
+    add_date: datetime | None
+    last_change_date: datetime | None
     # undocumented
-    ext_aero_identification_number: Optional[str]
-    ext_aero_password: Optional[str]
-    ext_ca_legal_type: Optional[str]
-    ext_cat_intended_usage: Optional[str]
-    ext_company_number: Optional[str]
-    ext_company_number_country: Optional[str]
-    ext_country_of_birth: Optional[str]
-    ext_date_of_birth: Optional[datetime]
-    ext_foreign_resident_identification_number: Optional[str]
-    ext_gender: Optional[str]
-    ext_identification_card_country: Optional[str]
-    ext_identification_card_issue_date: Optional[datetime]
-    ext_identification_card_issuing_authority: Optional[str]
-    ext_identification_card_number: Optional[str]
-    ext_identification_card_valid_until: Optional[datetime]
-    ext_language: Optional[str]
-    ext_place_of_birth: Optional[str]
-    ext_place_of_birth_postal_code: Optional[str]
-    ext_remarks: Optional[str]
-    ext_tax_id: Optional[str]
-    ext_tax_id_country: Optional[str]
-    ext_trade_mark_country: Optional[str]
-    ext_trade_mark_date_of_application: Optional[datetime]
-    ext_trade_mark_date_of_registration: Optional[datetime]
-    ext_trade_mark_name: Optional[str]
-    ext_trade_mark_register_number: Optional[str]
-    ext_trade_mark_registration_authority: Optional[str]
-    ext_trading_name: Optional[str]
-    ext_travel_unique_identification_number: Optional[str]
-    ext_uk_type: Optional[str]
-    ext_vat_id: Optional[str]
-    ext_vat_id_country: Optional[str]
-    ext_xxx_member_id: Optional[str]
-    placeholder_for_unreadable_supplier_contact: Optional[str]
+    ext_aero_identification_number: str | None
+    ext_aero_password: str | None
+    ext_ca_legal_type: str | None
+    ext_cat_intended_usage: str | None
+    ext_company_number: str | None
+    ext_company_number_country: str | None
+    ext_country_of_birth: str | None
+    ext_date_of_birth: datetime | None
+    ext_foreign_resident_identification_number: str | None
+    ext_gender: str | None
+    ext_identification_card_country: str | None
+    ext_identification_card_issue_date: datetime | None
+    ext_identification_card_issuing_authority: str | None
+    ext_identification_card_number: str | None
+    ext_identification_card_valid_until: datetime | None
+    ext_language: str | None
+    ext_place_of_birth: str | None
+    ext_place_of_birth_postal_code: str | None
+    ext_remarks: str | None
+    ext_tax_id: str | None
+    ext_tax_id_country: str | None
+    ext_trade_mark_country: str | None
+    ext_trade_mark_date_of_application: datetime | None
+    ext_trade_mark_date_of_registration: datetime | None
+    ext_trade_mark_name: str | None
+    ext_trade_mark_register_number: str | None
+    ext_trade_mark_registration_authority: str | None
+    ext_trading_name: str | None
+    ext_travel_unique_identification_number: str | None
+    ext_uk_type: str | None
+    ext_vat_id: str | None
+    ext_vat_id_country: str | None
+    ext_xxx_member_id: str | None
+    placeholder_for_unreadable_supplier_contact: str | None
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -115,7 +116,7 @@ class DomainContact(Element):
 
 class NameServer(Element):
     name: str
-    ips: Optional[Iterable[str]]
+    ips: Iterable[str] | None
 
 
 class DomainStatus(Enum):
@@ -148,30 +149,30 @@ class Domain(Element):
     transfer_lock_enabled: bool
     contacts: Iterable[DomainContact]
     nameservers: Iterable[NameServer]
-    id: Optional[str]
-    account_id: Optional[str]
-    name_unicode: Optional[str]
-    status: Optional[DomainStatus]
-    auth_info: Optional[str]
-    create_date: Optional[datetime]
-    current_contract_period_end: Optional[datetime]
-    next_contract_period_start: Optional[datetime]
-    deletion_type: Optional[DeletionType]
-    deletion_date: Optional[datetime]
-    add_date: Optional[datetime]
-    last_change_date: Optional[datetime]
+    id: str | None
+    account_id: str | None
+    name_unicode: str | None
+    status: DomainStatus | None
+    auth_info: str | None
+    create_date: datetime | None
+    current_contract_period_end: datetime | None
+    next_contract_period_start: datetime | None
+    deletion_type: DeletionType | None
+    deletion_date: datetime | None
+    add_date: datetime | None
+    last_change_date: datetime | None
     # undocumented
-    bundle_id: Optional[str]
-    deletion_scheduled_for: Optional[datetime]
-    dns_sec_entries: Optional[Iterable[str]]
-    latest_deletion_date_without_renew: Optional[datetime]
-    paid_until: Optional[datetime]
-    product_code: Optional[str]
-    renew_on: Optional[datetime]
-    restorable_until: Optional[datetime]
-    restrictions: Optional[Iterable[str]]
-    transfer_locked_by_owner_change_until: Optional[datetime]
-    trustee_service_enabled: Optional[bool]
+    bundle_id: str | None
+    deletion_scheduled_for: datetime | None
+    dns_sec_entries: Iterable[str] | None
+    latest_deletion_date_without_renew: datetime | None
+    paid_until: datetime | None
+    product_code: str | None
+    renew_on: datetime | None
+    restorable_until: datetime | None
+    restrictions: Iterable[str] | None
+    transfer_locked_by_owner_change_until: datetime | None
+    trustee_service_enabled: bool | None
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -215,11 +216,11 @@ class TransferMethod(Enum):
 
 
 class DomainStatusResult(Element):
-    domain_name: Optional[str]
-    domain_name_unicode: Optional[str]
-    domain_suffix: Optional[str]
-    status: Optional[DomainAvailability]
-    transfer_method: Optional[TransferMethod]
+    domain_name: str | None
+    domain_name_unicode: str | None
+    domain_suffix: str | None
+    status: DomainAvailability | None
+    transfer_method: TransferMethod | None
 
 
 class FoaRecipientType(Enum):
@@ -235,8 +236,8 @@ class FoaRecipientType(Enum):
 
 
 class TransferData(Element):
-    auth_info: Optional[str]
-    foa_recipient: Optional[FoaRecipientType]
+    auth_info: str | None
+    foa_recipient: FoaRecipientType | None
 
 
 class DomainService(Service[Domain]):
@@ -250,7 +251,7 @@ class DomainService(Service[Domain]):
         responses = response.get('responses', [])
         return [DomainStatusResult.from_json(dsr) for dsr in responses]
 
-    def delete(self, name: str, exec_date: Optional[datetime] = None) -> None:
+    def delete(self, name: str, exec_date: datetime | None = None) -> None:
         parameters = {
             'domainName': name,
         }
@@ -261,7 +262,7 @@ class DomainService(Service[Domain]):
             parameters=parameters
         )
 
-    def withdraw(self, name: str, disconnect: bool, exec_date: Optional[datetime] = None) -> None:
+    def withdraw(self, name: str, disconnect: bool, exec_date: datetime | None = None) -> None:
         parameters = {
             'domainName': name,
             'disconnect': disconnect,

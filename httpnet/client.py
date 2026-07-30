@@ -1,9 +1,7 @@
-from typing import Optional, Tuple, Union
-
 from ._core import Client
+from .dns import NameserverSetService, RecordService, TemplateService, ZoneConfigService, ZoneService
 from .domain import ContactService, DomainService, JobService
-from .dns import ZoneConfigService, RecordService, ZoneService, NameserverSetService, TemplateService
-from .email import MailboxService, OrganizationService, DomainSettingsService
+from .email import DomainSettingsService, MailboxService, OrganizationService
 
 
 class HttpNetClient:
@@ -11,8 +9,8 @@ class HttpNetClient:
     A client for the http.net Partner API
     """
 
-    def __init__(self, auth_token: str, owner_account_id: Optional[str] = None,
-                 timeout: Optional[Union[float, Tuple[float, float]]] = None) -> None:
+    def __init__(self, auth_token: str, owner_account_id: str | None = None,
+                 timeout: float | tuple[float, float] | None = None) -> None:
         self.__client = Client(auth_token, owner_account_id=owner_account_id, timeout=timeout)
 
         # Domains

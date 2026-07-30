@@ -1,14 +1,13 @@
 import json
 import re
 from collections import ChainMap
+from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
 from datetime import datetime
 from enum import Enum
-from typing import Generic, Iterable, Iterator, Mapping, MutableMapping, \
-    Optional, Sequence, Tuple, TypeVar, Union
+from typing import Generic, TypeVar
 
 import dateutil.parser
 import requests
-
 
 JsonObject = MutableMapping
 
@@ -20,15 +19,15 @@ class Client:
     FORMAT = 'json'
     DEFAULT_TIMEOUT = 180
 
-    def __init__(self, auth_token: str, owner_account_id: Optional[str] = None,
-                 timeout: Optional[Union[float, Tuple[float, float]]] = None) -> None:
+    def __init__(self, auth_token: str, owner_account_id: str | None = None,
+                 timeout: float | tuple[float, float] | None = None) -> None:
         self.auth_token = auth_token
         self.owner_account_id = owner_account_id
         self.timeout = timeout if timeout and timeout > 0 else Client.DEFAULT_TIMEOUT
         self.__session = requests.Session()
         self.__session.headers.update({'User-Agent': Client.USER_AGENT})
 
-    def call(self, service: str, method: str, parameters: Optional[Mapping] = None) -> JsonObject:
+    def call(self, service: str, method: str, parameters: Mapping | None = None) -> JsonObject:
         """
         Calls the method of a service.
 
@@ -133,7 +132,7 @@ class Element(metaclass=ElementMeta):
             try:
                 field_type = cls.__annotations__[field]
             except KeyError as e:
-                raise KeyError(f'No field "{field}"" defined in API model "{cls.__qualname__}"')
+                raise KeyError(f'No field "{field}"" defined in API model "{cls.__qualname__}"') from e
             fields[field] = _from_json_value(value, field_type)
         return cls(**fields)
 
@@ -189,7 +188,7 @@ class Service(Generic[T]):
         else:
             return f'{self._element_name}sFind'
 
-    def _call(self, method: str, parameters: Optional[Mapping] = None) -> Mapping:
+    def _call(self, method: str, parameters: Mapping | None = None) -> Mapping:
         response = self._client.call(self._service_domain, method, parameters)
         if response.get('status').lower() not in {'success', 'pending'}:
             error_messages = [f'{error["text"]} ({error["code"]}).' for error in response['errors']]
@@ -222,8 +221,8 @@ class Service(Generic[T]):
             parameters={self._id_name: key}
         )
 
-    def find(self, limit: Optional[int] = None, page: Optional[int] = None,
-             sort: Optional[str] = None, **filters) -> Iterator[T]:
+    def find(self, limit: int | None = None, page: int | None = None,
+             sort: str | None = None, **filters) -> Iterator[T]:
         parameters = {}
         if limit:
             parameters['limit'] = limit
