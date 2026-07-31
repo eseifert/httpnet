@@ -116,9 +116,6 @@ class Zone(Element):
 class ZoneConfigService(Service[ZoneConfig]):
     """Zone configs are created, updated and deleted through :class:`ZoneService`."""
 
-    def get(self, key: str, /) -> ZoneConfig:
-        return next(self.find(ZoneConfigId=key))
-
 
 class RecordService(Service[DnsRecord]):
     """Records are created, updated and deleted through :class:`ZoneService`."""
@@ -129,6 +126,9 @@ class RecordService(Service[DnsRecord]):
 
 
 class ZoneService(Service[Zone]):
+    # A zone is identified by its zone config, ``ZoneId`` is not a filter field.
+    _find_filter_name = 'ZoneConfigId'
+
     def create(self, zone: Zone, nameserver_set_id: str | None = None,
                use_default_nameserver_set: bool | None = None) -> Zone:
         parameters = zone.to_json()

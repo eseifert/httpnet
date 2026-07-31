@@ -312,6 +312,15 @@ class Service(Generic[T]):
         else:
             return f'{self._element_name}sFind'
 
+    @property
+    def _find_filter_name(self) -> str:
+        """
+        Name of the filter field that selects a single element by its ID. The
+        API capitalizes these, e.g. ``ContactId`` for the ``contact`` element,
+        and rejects unknown ones.
+        """
+        return f'{self._element_name[0].upper()}{self._element_name[1:]}Id'
+
     def _call(self, method: str, parameters: Mapping[str, Any] | None = None) -> JsonObject:
         response = self._client.call(self._service_domain, method, parameters)
         status = str(response.get('status', '')).lower()
@@ -321,13 +330,10 @@ class Service(Generic[T]):
             raise ServiceException(' '.join(error_messages) or f'API returned status "{status}".')
         return response
 
-    def get(self, key: str, /) -> T:
+    def _get_by_info(self, key: str, /) -> T:
         """
-        Retrieves a single element by its ID.
-
-        :param key: ID of the element
-        :return: The element
-        :raises ServiceException: if no element with this ID exists
+        Retrieves a single element through the ``<element>Info`` method. Only
+        few services provide one, see :meth:`get`.
         """
         response = self._call(
             method=self._get_method_name,
@@ -335,6 +341,31 @@ class Service(Generic[T]):
         )
         response_body = response['response']
         return self._element_class.from_json(response_body)
+
+    def _get_by_find(self, key: str, /) -> T:
+        """
+        Retrieves a single element by filtering the listing for its ID, see
+        :meth:`get`.
+        """
+        filters: dict[str, Any] = {self._find_filter_name: key}
+        try:
+            return next(self.find(limit=1, page=1, **filters))
+        except StopIteration:
+            raise KeyError(key) from None
+
+    def get(self, key: str, /) -> T:
+        """
+        Retrieves a single element by its ID.
+
+        Most services have no ``<element>Info`` method, so the element is
+        looked up by filtering the listing for its ID. Services that do provide
+        one, such as :class:`~httpnet.domain.DomainService`, override this.
+
+        :param key: ID of the element
+        :return: The element
+        :raises KeyError: if no element with this ID exists
+        """
+        return self._get_by_find(key)
 
     def _find_parameters(self, limit: int | None = None, sort: str | None = None,
                          filters: Mapping[str, Any] | None = None) -> JsonObject:

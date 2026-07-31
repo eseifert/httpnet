@@ -174,3 +174,6 @@ class DomainSettings(Element):
 
 class DomainSettingsService(UpdatableService[DomainSettings]):
     """Domain settings exist for every domain, they can only be listed and updated."""
+
+    # Domain settings carry no ID of their own, they are keyed by domain name.
+    _find_filter_name = 'DomainName'

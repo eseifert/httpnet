@@ -87,15 +87,7 @@ class Contact(Element):
 
 
 class ContactService(Service[Contact]):
-    def get(self, key: str, /) -> Contact:
-        response = self._call(
-            method=f'{self._element_name}sFind',
-            parameters=dict(filter=dict(field='ContactId', value=key), limit=1)
-        )
-        response_body = response['response']
-        if not response_body['data']:
-            raise KeyError(key)
-        return self._element_class.from_json(response_body['data'][0])
+    """Contacts are retrieved by filtering ``contactsFind`` for ``ContactId``."""
 
 
 class DomainContactType(Enum):
@@ -258,6 +250,17 @@ class TransferData(Element):
 
 class DomainService(Service[Domain]):
     _id_name = 'domainName'
+
+    def get(self, key: str, /) -> Domain:
+        """
+        Retrieves a domain by its name. Domains are one of the few elements the
+        API provides an ``Info`` method for.
+
+        :param key: Name of the domain
+        :return: The domain
+        :raises ServiceException: if no domain with this name exists
+        """
+        return self._get_by_info(key)
 
     def status(self, *names: str) -> Iterable[DomainStatusResult]:
         response = self._call(

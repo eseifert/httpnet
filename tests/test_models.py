@@ -110,3 +110,40 @@ class TestServices:
         service = getattr(api, name)
         assert service._element_class is not None
         assert service._find_method_name.endswith('Find')
+
+    @pytest.mark.parametrize('name, filter_name', [
+        ('domain_contacts', 'ContactId'),
+        ('domain_jobs', 'JobId'),
+        ('dns_zone_configs', 'ZoneConfigId'),
+        ('dns_records', 'RecordId'),
+        # A zone is identified by its zone config, ``ZoneId`` is rejected.
+        ('dns_zones', 'ZoneConfigId'),
+        ('nameserver_sets', 'NameserverSetId'),
+        ('dns_templates', 'TemplateId'),
+        ('mailboxes', 'MailboxId'),
+        # Domain settings carry no ID of their own.
+        ('email_domain_settings', 'DomainName'),
+    ])
+    def test_get_filters_on_the_field_the_api_accepts(self, name: str, filter_name: str,
+                                                      session) -> None:
+        api = HttpNetClient(auth_token='token')
+        session.responses.append({
+            'status': 'success', 'response': {'data': [], 'totalPages': 0},
+        })
+        with pytest.raises(KeyError):
+            getattr(api, name).get('id-1')
+        assert session.calls[0]['body']['filter']['subFilter'] == [
+            {'field': filter_name, 'value': 'id-1'}
+        ]
+
+    def test_domains_are_retrieved_through_domain_info(self, session) -> None:
+        api = HttpNetClient(auth_token='token')
+        session.responses.append({
+            'status': 'success',
+            'response': {'name': 'example.com', 'transferLockEnabled': True,
+                         'contacts': [], 'nameservers': []},
+        })
+        domain = api.domains.get('example.com')
+        assert domain.name == 'example.com'
+        assert session.calls[0]['url'].endswith('/domain/v1/json/domainInfo')
+        assert session.calls[0]['body']['domainName'] == 'example.com'

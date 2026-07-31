@@ -46,9 +46,9 @@ library:
 Handle a missing object
 -----------------------
 
-Fetching an object that does not exist raises a
-:class:`~httpnet._core.ServiceException`, except for contacts, where it raises
-a :exc:`KeyError`:
+Fetching an object that does not exist raises a :exc:`KeyError`. Most services
+have no ``Info`` method, so ``get`` filters the listing for the ID and reports
+an empty result this way:
 
 .. code-block:: python
 
@@ -56,6 +56,17 @@ a :exc:`KeyError`:
         contact = api.domain_contacts.get('does-not-exist')
     except KeyError:
         contact = None
+
+Domains are the exception. The API provides a ``domainInfo`` method for them,
+which rejects an unknown name with a
+:class:`~httpnet._core.ServiceException`:
+
+.. code-block:: python
+
+    try:
+        domain = api.domains.get('does-not-exist.com')
+    except ServiceException:
+        domain = None
 
 Check for existence without fetching
 ------------------------------------

@@ -120,11 +120,30 @@ class TestService:
         assert service._id_name == 'widgetId'
         assert service._get_method_name == 'widgetInfo'
         assert service._find_method_name == 'widgetsFind'
+        assert service._find_filter_name == 'WidgetId'
 
-    def test_get_returns_element(self, client, session) -> None:
-        session.responses.append({'status': 'success', 'response': {'id': '1', 'name': 'gadget'}})
+    def test_get_looks_the_element_up_through_find(self, client, session) -> None:
+        session.responses.append({
+            'status': 'success',
+            'response': {'data': [{'id': '1', 'name': 'gadget'}], 'totalPages': 1},
+        })
         widget = WidgetService(client).get('1')
         assert widget.name == 'gadget'
+        assert session.calls[0]['url'].endswith('/widgetsFind')
+        assert session.calls[0]['body']['filter']['subFilter'] == [
+            {'field': 'WidgetId', 'value': '1'}
+        ]
+
+    def test_get_raises_key_error_when_nothing_matches(self, client, session) -> None:
+        session.responses.append({'status': 'success', 'response': {'data': [], 'totalPages': 0}})
+        with pytest.raises(KeyError, match='1'):
+            WidgetService(client).get('1')
+
+    def test_get_by_info_uses_the_info_method(self, client, session) -> None:
+        session.responses.append({'status': 'success', 'response': {'id': '1', 'name': 'gadget'}})
+        widget = WidgetService(client)._get_by_info('1')
+        assert widget.name == 'gadget'
+        assert session.calls[0]['url'].endswith('/widgetInfo')
         assert session.calls[0]['body']['widgetId'] == '1'
 
     def test_find_stops_after_last_page(self, client, session) -> None:
