@@ -52,10 +52,11 @@ class ZoneConfig(Element):
     last_change_date: datetime | None
     soa_values: SoaValues | None
     template_values: TemplateValues | None
-    # undocumented
-    add_date: datetime | None
     dns_sec_mode: str | None
     dns_server_group_id: str | None
+    # undocumented
+    add_date: datetime | None
+    restorable_until: datetime | None
 
 
 class RecordType(Enum):
@@ -63,14 +64,23 @@ class RecordType(Enum):
     AAAA = 'AAAA'
     ALIAS = 'ALIAS'
     CAA = 'CAA'
+    CERT = 'CERT'
     CNAME = 'CNAME'
+    DNSKEY = 'DNSKEY'
     DS = 'DS'
     MX = 'MX'
     NS = 'NS'
+    NSEC = 'NSEC'
+    NSEC3 = 'NSEC3'
+    NSEC3PARAM = 'NSEC3PARAM'
     NULLMX = 'NULLMX'
+    OPENPGPKEY = 'OPENPGPKEY'
     PTR = 'PTR'
+    RRSIG = 'RRSIG'
+    # undocumented, but every zone answers with the SOA record of its zone
     SOA = 'SOA'
     SRV = 'SRV'
+    SSHFP = 'SSHFP'
     TLSA = 'TLSA'
     TXT = 'TXT'
 
@@ -95,6 +105,7 @@ class DnsRecord(Element):
     zone_config_id: str | None
     account_id: str | None
     add_date: datetime | None
+    comments: str | None
 
 
 class Zone(Element):
@@ -212,6 +223,10 @@ class NameserverSet(Element):
     name: str
     default_nameserver_set: bool | None
     nameservers: Iterable[str]
+    # undocumented
+    type: str | None
+    add_date: datetime | None
+    last_change_date: datetime | None
 
 
 class NameserverSetService(CrudService[NameserverSet]):

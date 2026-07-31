@@ -1,6 +1,7 @@
 from collections.abc import Iterable, Sequence
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
 from httpnet._core import Element, Service
 
@@ -38,6 +39,9 @@ class Contact(Element):
     add_date: datetime | None
     last_change_date: datetime | None
     # undocumented
+    comments: str | None
+    disclose: bool | None
+    email_is_verified: bool | None
     ext_aero_identification_number: str | None
     ext_aero_password: str | None
     ext_ca_legal_type: str | None
@@ -54,6 +58,7 @@ class Contact(Element):
     ext_identification_card_number: str | None
     ext_identification_card_valid_until: datetime | None
     ext_language: str | None
+    ext_nationality: str | None
     ext_place_of_birth: str | None
     ext_place_of_birth_postal_code: str | None
     ext_remarks: str | None
@@ -204,6 +209,8 @@ class TransferMethod(Enum):
     OUT_OF_BAND = ''
     AUTH_INFO = 'authInfo'
     PUSH = 'push'
+    # undocumented, reported for suffixes that are transferred by registrar tag
+    PUSH_TAG = 'pushTag'
 
     def __repr__(self):
         return f'{self.__class__.__qualname__}.{self.name}'
@@ -218,6 +225,18 @@ class DomainStatusResult(Element):
     domain_suffix: str | None
     status: DomainAvailability | None
     transfer_method: TransferMethod | None
+    # undocumented
+    early_access_start: datetime | None
+    extension: str | None
+    general_availability_start: datetime | None
+    landrush_start: datetime | None
+    launch_phase: str | None
+    # Nested price structure that is only reported for premium domains. It is
+    # passed through unchanged instead of being modelled.
+    premium_prices: dict[str, Any] | None
+    registrar_tag: str | None
+    sunrise_start: datetime | None
+    transfer_owner_handling: str | None
 
 
 class FoaRecipientType(Enum):
@@ -326,20 +345,24 @@ class Job(Element):
     handle: str
     type: str
     state: str
-    sub_state: str
-    comments: str
     errors: str
+    warnings: str
+    client_transaction_id: str
+    server_transaction_id: str
     execution_date: datetime
     add_date: datetime
     last_change_date: datetime
     # undocumented
     action: str
-    client_transaction_id: str
+    comments: str
     events: Iterable[JobEvent]
     object_id: str
-    server_transaction_id: str
+    object_type: str
+    # The API reports these alongside ``state``.
+    sub_state: str
+    status: str
+    sub_status: str
     triggered_by: JobTrigger
-    warnings: str
 
 
 class JobService(Service[Job]):
