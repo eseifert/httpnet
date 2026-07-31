@@ -12,3 +12,4 @@ those live in the :doc:`how-to guides <../how-to/index>`.
    elements
    service-classes
    asynchronous-operations
+   differences-to-the-documentation

@@ -14,8 +14,15 @@ published on Read the Docs.
 Disclaimer
 ==========
 
-This package is not related to http.net Internet GmbH. So far, it is just a
-proof of concept and not tested in any way.
+This package is not related to http.net Internet GmbH.
+
+The reading part of the API has been exercised against a live account: every
+listing, every ``get`` and the availability check answer and convert correctly.
+The writing part is covered by unit tests only and has not been tried against a
+real account. Where the live API turned out to differ from its documentation,
+the deviations are collected under `Where the API differs from its
+documentation
+<https://httpnet.readthedocs.io/en/latest/explanation/differences-to-the-documentation.html>`__.
 
 
 Installation
