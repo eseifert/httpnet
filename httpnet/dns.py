@@ -175,6 +175,12 @@ class ZoneService(Service[Zone]):
             parameters={'zoneConfigId': zone_config_id}
         )
 
+    def purge_restorable(self, zone_config_id: str) -> None:
+        self._call(
+            method='zonePurgeRestorable',
+            parameters={'zoneConfigId': zone_config_id}
+        )
+
     def change_content(self, record_type: RecordType, old_content: str, new_content: str,
                        include_templates: bool, include_sub_accounts: bool) -> None:
         self._call(
