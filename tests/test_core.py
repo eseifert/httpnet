@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 import pytest
 
@@ -9,6 +10,14 @@ class Widget(Element):
     id: str | None
     name: str
     created: datetime | None
+
+
+class Crate(Element):
+    """Covers the mapping and ``Any`` annotations that :class:`Widget` does not."""
+
+    prices: dict[str, Any] | None
+    labels: dict[str, str] | None
+    payload: Any
 
 
 class WidgetService(CrudService[Widget]):
@@ -75,6 +84,23 @@ class TestElement:
     def test_from_json_rejects_unknown_field(self) -> None:
         with pytest.raises(KeyError, match='nope'):
             Widget.from_json({'nope': 'x'})
+
+    def test_mapping_field_keeps_its_items(self) -> None:
+        # Regression: a mapping used to be iterated like a sequence, which
+        # turned it into a list of its keys.
+        nested = {'create': {'currency': 'usd', 'netAmount': 1865}, 'renew': None}
+        crate = Crate.from_json({'prices': nested})
+        assert crate.prices == nested
+        assert crate.prices['create']['netAmount'] == 1865
+        assert crate.to_json()['prices'] == nested
+
+    def test_mapping_field_converts_its_values(self) -> None:
+        crate = Crate.from_json({'labels': {'a': 1}})
+        assert crate.labels == {'a': '1'}
+
+    def test_any_field_is_passed_through(self) -> None:
+        crate = Crate.from_json({'payload': [{'a': 1}, 'b', None]})
+        assert crate.payload == [{'a': 1}, 'b', None]
 
 
 class TestService:

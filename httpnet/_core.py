@@ -129,6 +129,8 @@ class ElementMeta(type):
 def _from_json_value(value, type_):
     if value is None:
         return None
+    if type_ is Any:
+        return value
     origin = get_origin(type_)
     if origin in (Union, UnionType):
         args = get_args(type_)
@@ -146,6 +148,11 @@ def _from_json_value(value, type_):
         return value
     if origin is not None:
         args = get_args(type_)
+        # Mappings have to be handled before the sequence case, iterating one
+        # would yield its keys instead of its items.
+        if isinstance(origin, type) and issubclass(origin, Mapping):
+            value_type = args[1] if len(args) > 1 else None
+            return {k: _from_json_value(v, value_type) for k, v in value.items()}
         return [_from_json_value(v, args[0]) for v in value] if args else list(value)
     if type_ is datetime and isinstance(value, str):
         return dateutil.parser.parse(value)
